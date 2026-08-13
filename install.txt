@@ -1,0 +1,96 @@
+sf_whoson.py - Setup Instructions
+==================================
+
+WHAT THIS DOES
+--------------
+Shows a live, auto-refreshing "who's online" list for your Spitfire BBS,
+by reading two small files Spitfire already maintains - no logging into
+the BBS yourself, no remote-desktop into the machine running it.
+
+Spitfire's last release was in 1999, so this covers the format that
+version (and everything before it) uses. The record layouts below were
+reverse-engineered from a live capture rather than from Spitfire's own
+docs, but since the file format hasn't changed since, this should work
+for any Spitfire install without modification.
+
+
+REQUIREMENTS
+------------
+- Python 3.6 or newer (no extra packages needed - uses only the standard
+  library). Check with: python --version
+- File-level access to wherever your Spitfire node(s) keep their shared
+  \work directory - a mapped network drive letter or a UNC path both work.
+  If you can already browse to that folder in File Explorer, you're set.
+
+
+SETUP STEPS
+-----------
+1. Copy sf_whoson.py to any folder on the machine you want to watch from
+   (it doesn't need to run on the BBS server itself).
+
+2. Run it once:
+
+       python sf_whoson.py
+
+   Since there's no config yet, it will create a file called
+   sf_whoson.ini next to itself, then exit.
+
+3. Open sf_whoson.ini in Notepad and edit the paths and settings:
+
+   whoson_path   - full path to SFWHOSON.DAT
+   userptr_path  - full path to SFUSERS.PTR
+   node_count    - how many nodes your BBS actually runs
+   refresh_seconds - how often to refresh the display
+
+   Both SFWHOSON.DAT and SFUSERS.PTR are normally in the same shared
+   \work directory that all of your Spitfire nodes point to. If you're
+   not sure where that is, check your node config for a shared WORK or
+   DATA path - it's usually the same folder across all nodes.
+
+4. Run it again:
+
+       python sf_whoson.py
+
+   It should print each node number and either "idle" or the name of
+   whoever's logged on, refreshing automatically. Press Ctrl+C to stop.
+
+
+IF SOMETHING LOOKS WRONG
+-------------------------
+The script checks file sizes on startup and will tell you plainly if:
+  - it can't find SFWHOSON.DAT or SFUSERS.PTR at the paths you gave it
+  - SFWHOSON.DAT is too small for the node_count you configured
+  - either file's size doesn't divide evenly into the expected record
+    size (6 bytes for SFWHOSON.DAT, 31 bytes for SFUSERS.PTR)
+
+That last case almost always just means node_count in the ini doesn't
+match how many nodes your BBS actually runs - double check that first.
+
+For reference, this script assumes:
+
+  SFWHOSON.DAT: one 6-byte record per node, in node order, containing a
+  2-byte signed integer "UserNo" (-1 = idle, otherwise a 0-based index
+  into your user database), a 1-byte "Mode" character, and 3 reserved
+  bytes.
+
+  SFUSERS.PTR: one 31-byte record per user (0-based, same order as your
+  main user database), containing a 1-byte Pascal string length prefix
+  followed by up to 30 bytes of name text.
+
+If you ever do want to double check this against your own install, it's
+a quick check with a free hex editor (HxD or ImHex, just viewing, no
+editing needed): have a caller log into a known node, then look at that
+node's 6-byte slot in SFWHOSON.DAT (node 1 = first 6 bytes, node 2 =
+next 6, etc) - the first 2 bytes read as a little-endian signed integer
+should no longer be -1 (FF FF). Then search SFUSERS.PTR for the caller's
+name and confirm which 31-byte record it falls in matches that number.
+
+
+WHAT "MODE" MEANS
+------------------
+The Mode byte from SFWHOSON.DAT is displayed next to a caller's name
+when it's a printable character, but its full meaning hasn't been
+mapped out yet - so far it's only been confirmed to show as blank when
+a caller is sitting at the main menu. If you notice it showing
+something else while a caller is doing something specific (reading
+mail, in a door game, etc), that's useful data for refining this.

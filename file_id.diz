@@ -1,0 +1,9 @@
+SF-WHOSON v1.0 - Spitfire node poller
+Shows live who's-online status for
+your Spitfire BBS nodes by reading
+SFWHOSON.DAT and SFUSERS.PTR. No
+login or remote desktop needed.
+Auto-refreshing console display.
+Python 3, config via simple .ini.
+Includes full setup instructions.
+by Xbit / X-Bit Operations
